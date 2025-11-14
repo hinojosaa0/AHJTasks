@@ -44,18 +44,43 @@
             margin-bottom: 24px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             border: 1px solid #3a506b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .header h1 {
+        .header-content h1 {
             color: #5dade2;
             font-size: 28px;
             margin-bottom: 8px;
             font-weight: 600;
         }
 
-        .header p {
+        .header-content p {
             color: #bdc3c7;
             font-size: 14px;
+        }
+
+        .add-task-global-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-task-global-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+            background: linear-gradient(135deg, #5dade2 0%, #3498db 100%);
         }
 
         /* Sidebar Styles */
@@ -721,6 +746,7 @@
             const [currentView, setCurrentView] = useState('by-project'); // 'by-project' or 'all-tasks'
             const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
             const [sidebarOpen, setSidebarOpen] = useState(false);
+            const [selectedProjectId, setSelectedProjectId] = useState(''); // For global task creation
             const [taskForm, setTaskForm] = useState({
                 name: '',
                 owner: '',
@@ -790,6 +816,7 @@
             const openTaskModal = (project, task = null) => {
                 setCurrentProject(project);
                 setEditingTask(task);
+                setSelectedProjectId(project ? project.id : '');
                 if (task) {
                     setTaskForm({
                         name: task.name,
@@ -812,18 +839,42 @@
                 setShowTaskModal(true);
             };
 
+            // Nueva función para abrir el modal global sin proyecto preseleccionado
+            const openGlobalTaskModal = () => {
+                setCurrentProject(null);
+                setEditingTask(null);
+                setSelectedProjectId('');
+                setTaskForm({
+                    name: '',
+                    owner: '',
+                    status: 'Not Started',
+                    dueDate: '',
+                    priority: 'Medium',
+                    notes: ''
+                });
+                setShowTaskModal(true);
+            };
+
             const saveTask = () => {
                 if (!taskForm.name.trim()) return;
+                
+                // Determine which project to use
+                const targetProject = currentProject || projects.find(p => p.id === selectedProjectId);
+                
+                if (!targetProject) {
+                    alert('Please select a project');
+                    return;
+                }
 
                 if (isConfigured) {
                     if (editingTask) {
-                        database.ref(`projects/${currentProject.id}/tasks/${editingTask.id}`).update(taskForm);
+                        database.ref(`projects/${targetProject.id}/tasks/${editingTask.id}`).update(taskForm);
                     } else {
-                        database.ref(`projects/${currentProject.id}/tasks`).push(taskForm);
+                        database.ref(`projects/${targetProject.id}/tasks`).push(taskForm);
                     }
                 } else {
                     const updatedProjects = projects.map(project => {
-                        if (project.id === currentProject.id) {
+                        if (project.id === targetProject.id) {
                             if (editingTask) {
                                 return {
                                     ...project,
@@ -845,6 +896,8 @@
 
                 setShowTaskModal(false);
                 setEditingTask(null);
+                setCurrentProject(null);
+                setSelectedProjectId('');
             };
 
             const deleteTask = (projectId, taskId) => {
@@ -989,8 +1042,13 @@
 
                     <div className={`container ${sidebarOpen ? 'sidebar-open' : ''}`}>
                         <div className="header">
-                            <h1>Alberto Hinojosa's Tasks</h1>
-                            <p>Real-time sync across all devices</p>
+                            <div className="header-content">
+                                <h1>Alberto Hinojosa's Tasks</h1>
+                                <p>Real-time sync across all devices</p>
+                            </div>
+                            <button className="add-task-global-btn" onClick={openGlobalTaskModal}>
+                                ➕ Add Task
+                            </button>
                         </div>
 
                         {!isConfigured && (
@@ -1303,6 +1361,26 @@
                                 <div className="modal-header">
                                     {editingTask ? 'Edit Task' : 'Create New Task'}
                                 </div>
+                                
+                                {/* Project Selector - Only show when creating new task without project context */}
+                                {!currentProject && !editingTask && (
+                                    <div className="form-group">
+                                        <label className="form-label">Project *</label>
+                                        <select
+                                            className="form-select"
+                                            value={selectedProjectId}
+                                            onChange={e => setSelectedProjectId(e.target.value)}
+                                        >
+                                            <option value="">Select a project</option>
+                                            {projects.map(project => (
+                                                <option key={project.id} value={project.id}>
+                                                    {project.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                
                                 <div className="form-group">
                                     <label className="form-label">Task Name</label>
                                     <input
