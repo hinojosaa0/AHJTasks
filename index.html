@@ -626,6 +626,45 @@
             border-color: #5dade2;
         }
 
+        /* Overdue Section */
+        .overdue-section {
+            background: #2c3e50;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid #3a506b;
+            border-left: 4px solid #c0392b;
+        }
+
+        .overdue-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .overdue-header h2 {
+            color: #c0392b;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .overdue-badge {
+            background: #c0392b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .due-today-section {
             background: #2c3e50;
             border-radius: 16px;
@@ -677,6 +716,66 @@
             margin-bottom: 8px;
         }
 
+        /* Search Box */
+        .search-container {
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px;
+            padding-left: 45px;
+            border: 2px solid #3a506b;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            transition: all 0.3s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235dade2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 15px center;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #5dade2;
+            box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #7f8c8d;
+        }
+
+        /* Days Remaining Badges */
+        .days-remaining {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .days-overdue {
+            background: #c0392b;
+            color: white;
+        }
+
+        .days-soon {
+            background: #f39c12;
+            color: #1a1a2e;
+        }
+
+        .days-ok {
+            background: #27ae60;
+            color: white;
+        }
+
+        .days-today {
+            background: #e74c3c;
+            color: white;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -711,7 +810,6 @@
         const { useState, useEffect } = React;
 
         // Firebase Configuration
-        // IMPORTANT: Replace these with your own Firebase project credentials
      const firebaseConfig = {
     apiKey: "AIzaSyCELsFiOt_PZWgVluE4euT84tayWNZBypI",
     authDomain: "claude-task-manager-bc2f3.firebaseapp.com",
@@ -722,7 +820,7 @@
     appId: "1:483389290422:web:d48ab5bef1ce22390df317"
 };
 
-        // Initialize Firebase only if not already initialized
+        // Initialize Firebase
         let app;
         let database;
         const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
@@ -743,10 +841,11 @@
             const [currentProject, setCurrentProject] = useState(null);
             const [editingTask, setEditingTask] = useState(null);
             const [newProjectName, setNewProjectName] = useState('');
-            const [currentView, setCurrentView] = useState('by-project'); // 'by-project' or 'all-tasks'
+            const [currentView, setCurrentView] = useState('by-project');
             const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
             const [sidebarOpen, setSidebarOpen] = useState(false);
-            const [selectedProjectId, setSelectedProjectId] = useState(''); // For global task creation
+            const [selectedProjectId, setSelectedProjectId] = useState('');
+            const [searchQuery, setSearchQuery] = useState('');
             const [taskForm, setTaskForm] = useState({
                 name: '',
                 owner: '',
@@ -790,7 +889,6 @@
                         createdAt: Date.now()
                     });
                 } else {
-                    // Demo mode - local storage
                     const newProject = {
                         id: Date.now().toString(),
                         name: newProjectName,
@@ -839,7 +937,6 @@
                 setShowTaskModal(true);
             };
 
-            // Nueva función para abrir el modal global sin proyecto preseleccionado
             const openGlobalTaskModal = () => {
                 setCurrentProject(null);
                 setEditingTask(null);
@@ -858,7 +955,6 @@
             const saveTask = () => {
                 if (!taskForm.name.trim()) return;
                 
-                // Determine which project to use
                 const targetProject = currentProject || projects.find(p => p.id === selectedProjectId);
                 
                 if (!targetProject) {
@@ -944,13 +1040,11 @@
                 return priorityMap[priority] || 'priority-medium';
             };
 
-            // Get today's date in YYYY-MM-DD format
             const getTodayDate = () => {
                 const today = new Date();
                 return today.toISOString().split('T')[0];
             };
 
-            // Get all tasks with project information
             const getAllTasksWithProject = () => {
                 const allTasks = [];
                 projects.forEach(project => {
@@ -967,27 +1061,45 @@
                 return allTasks;
             };
 
-            // Get all tasks sorted chronologically (excluding today's tasks)
-            const getAllTasksSorted = () => {
-                const today = getTodayDate();
-                const allTasks = getAllTasksWithProject();
-                
-                // Exclude today's tasks
-                const futureTasks = allTasks.filter(task => task.dueDate !== today);
-                
-                // Sort by due date (chronologically)
-                return futureTasks.sort((a, b) => {
-                    // Tasks without due date go to the end
-                    if (!a.dueDate && !b.dueDate) return 0;
-                    if (!a.dueDate) return 1;
-                    if (!b.dueDate) return -1;
-                    
-                    // Compare dates
-                    return new Date(a.dueDate) - new Date(b.dueDate);
-                });
+            // Calculate days remaining
+            const getDaysRemaining = (dueDate) => {
+                if (!dueDate) return null;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const due = new Date(dueDate);
+                due.setHours(0, 0, 0, 0);
+                const diffTime = due - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays;
             };
 
-            // Get tasks due today (excluding completed tasks)
+            // Format days remaining text
+            const formatDaysRemaining = (days) => {
+                if (days === null) return null;
+                if (days < 0) return `${Math.abs(days)} days overdue`;
+                if (days === 0) return 'Due today';
+                if (days === 1) return 'Due tomorrow';
+                return `${days} days left`;
+            };
+
+            // Get CSS class for days remaining
+            const getDaysRemainingClass = (days) => {
+                if (days === null) return '';
+                if (days < 0) return 'days-overdue';
+                if (days === 0) return 'days-today';
+                if (days <= 3) return 'days-soon';
+                return 'days-ok';
+            };
+
+            // Get overdue tasks (excluding completed)
+            const getOverdueTasks = () => {
+                const today = getTodayDate();
+                return getAllTasksWithProject().filter(task => 
+                    task.dueDate && task.dueDate < today && task.status !== 'Completed'
+                ).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            };
+
+            // Get tasks due today (excluding completed)
             const getTasksDueToday = () => {
                 const today = getTodayDate();
                 return getAllTasksWithProject().filter(task => 
@@ -995,7 +1107,33 @@
                 );
             };
 
-            // Filter projects based on selection
+            // Get all tasks sorted chronologically (excluding today's and overdue tasks)
+            const getAllTasksSorted = () => {
+                const today = getTodayDate();
+                const allTasks = getAllTasksWithProject();
+                
+                const futureTasks = allTasks.filter(task => task.dueDate && task.dueDate > today);
+                
+                return futureTasks.sort((a, b) => {
+                    if (!a.dueDate && !b.dueDate) return 0;
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    return new Date(a.dueDate) - new Date(b.dueDate);
+                });
+            };
+
+            // Filter tasks by search query
+            const filterTasksBySearch = (tasks) => {
+                if (!searchQuery.trim()) return tasks;
+                const query = searchQuery.toLowerCase();
+                return tasks.filter(task => 
+                    task.name.toLowerCase().includes(query) ||
+                    (task.owner && task.owner.toLowerCase().includes(query)) ||
+                    (task.notes && task.notes.toLowerCase().includes(query)) ||
+                    task.projectName.toLowerCase().includes(query)
+                );
+            };
+
             const getFilteredProjects = () => {
                 if (selectedProjectFilter === 'all') {
                     return projects;
@@ -1003,16 +1141,83 @@
                 return projects.filter(p => p.id === selectedProjectFilter);
             };
 
-            // Handle project selection from sidebar
             const selectProjectFromSidebar = (projectId) => {
                 setSelectedProjectFilter(projectId);
                 setCurrentView('by-project');
                 setSidebarOpen(false);
             };
 
-            // Toggle sidebar
             const toggleSidebar = () => {
                 setSidebarOpen(!sidebarOpen);
+            };
+
+            // Render task item
+            const renderTaskItem = (task) => {
+                const daysRemaining = getDaysRemaining(task.dueDate);
+                const daysText = formatDaysRemaining(daysRemaining);
+                const daysClass = getDaysRemainingClass(daysRemaining);
+
+                return (
+                    <div key={`${task.projectId}-${task.id}`} className="task-item">
+                        <span className="task-project-badge">{task.projectName}</span>
+                        <div className="task-header">
+                            <div className="task-title">
+                                {task.name}
+                                {daysText && (
+                                    <span className={`days-remaining ${daysClass}`}>
+                                        {daysText}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button 
+                                    className="btn btn-secondary btn-small"
+                                    onClick={() => {
+                                        const project = projects.find(p => p.id === task.projectId);
+                                        openTaskModal(project, task);
+                                    }}
+                                >
+                                    ✏️
+                                </button>
+                                <button 
+                                    className="btn btn-danger btn-small"
+                                    onClick={() => deleteTask(task.projectId, task.id)}
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <div className="task-details">
+                            <div className="task-field">
+                                <div className="task-label">Owner</div>
+                                <div className="task-value">{task.owner || 'Unassigned'}</div>
+                            </div>
+                            <div className="task-field">
+                                <div className="task-label">Status</div>
+                                <div className="task-value">
+                                    <span className={`status-badge ${getStatusClass(task.status)}`}>
+                                        {task.status}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="task-field">
+                                <div className="task-label">Due Date</div>
+                                <div className="task-value">{task.dueDate || 'Not set'}</div>
+                            </div>
+                            <div className="task-field">
+                                <div className="task-label">Priority</div>
+                                <div className={`task-value ${getPriorityClass(task.priority)}`}>
+                                    {task.priority}
+                                </div>
+                            </div>
+                        </div>
+                        {task.notes && (
+                            <div className="task-notes">
+                                📝 {task.notes}
+                            </div>
+                        )}
+                    </div>
+                );
             };
 
             return (
@@ -1056,7 +1261,6 @@
                         </div>
                     </div>
 
-                    {/* Sidebar Overlay */}
                     <div 
                         className={`sidebar-overlay ${sidebarOpen ? 'show' : ''}`}
                         onClick={() => setSidebarOpen(false)}
@@ -1084,6 +1288,19 @@
                                     <br/>
                                     <em>Currently running in demo mode (data won't sync between devices)</em>
                                 </p>
+                            </div>
+                        )}
+
+                        {/* Search Box */}
+                        {currentView === 'all-tasks' && (
+                            <div className="search-container">
+                                <input
+                                    type="text"
+                                    className="search-input"
+                                    placeholder="Search tasks by name, owner, project, or notes..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
                             </div>
                         )}
 
@@ -1115,7 +1332,20 @@
                             </button>
                         </div>
 
-                    {/* Due Today Section - Solo se muestra en la vista "All Tasks" */}
+                    {/* Overdue Section */}
+                    {currentView === 'all-tasks' && getOverdueTasks().length > 0 && (
+                        <div className="overdue-section">
+                            <div className="overdue-header">
+                                <h2>⚠️ Overdue</h2>
+                                <span className="overdue-badge">{getOverdueTasks().length}</span>
+                            </div>
+                            <div className="tasks-list">
+                                {filterTasksBySearch(getOverdueTasks()).map(task => renderTaskItem(task))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Due Today Section */}
                     {currentView === 'all-tasks' && getTasksDueToday().length > 0 && (
                         <div className="due-today-section">
                             <div className="due-today-header">
@@ -1123,120 +1353,24 @@
                                 <span className="due-today-badge">{getTasksDueToday().length}</span>
                             </div>
                             <div className="tasks-list">
-                                {getTasksDueToday().map(task => (
-                                    <div key={`${task.projectId}-${task.id}`} className="task-item">
-                                        <span className="task-project-badge">{task.projectName}</span>
-                                        <div className="task-header">
-                                            <div className="task-title">{task.name}</div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    className="btn btn-secondary btn-small"
-                                                    onClick={() => {
-                                                        const project = projects.find(p => p.id === task.projectId);
-                                                        openTaskModal(project, task);
-                                                    }}
-                                                >
-                                                    ✏️
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="task-details">
-                                            <div className="task-field">
-                                                <div className="task-label">Owner</div>
-                                                <div className="task-value">{task.owner || 'Unassigned'}</div>
-                                            </div>
-                                            <div className="task-field">
-                                                <div className="task-label">Status</div>
-                                                <div className="task-value">
-                                                    <span className={`status-badge ${getStatusClass(task.status)}`}>
-                                                        {task.status}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="task-field">
-                                                <div className="task-label">Priority</div>
-                                                <div className={`task-value ${getPriorityClass(task.priority)}`}>
-                                                    {task.priority}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {task.notes && (
-                                            <div className="task-notes">
-                                                📝 {task.notes}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                {filterTasksBySearch(getTasksDueToday()).map(task => renderTaskItem(task))}
                             </div>
                         </div>
                     )}
 
-                    {/* All Tasks View - Ahora con orden cronológico */}
+                    {/* All Tasks View */}
                     {currentView === 'all-tasks' && (
                         <div className="project-card">
                             <div className="project-header">
-                                <h2 className="project-title">📅 Upcoming Tasks ({getAllTasksSorted().length})</h2>
+                                <h2 className="project-title">📅 Upcoming Tasks ({filterTasksBySearch(getAllTasksSorted()).length})</h2>
                             </div>
                             <div className="tasks-list">
-                                {getAllTasksSorted().length === 0 ? (
+                                {filterTasksBySearch(getAllTasksSorted()).length === 0 ? (
                                     <div className="empty-state">
-                                        <p>No upcoming tasks. All tasks are either due today or have no due date set.</p>
+                                        <p>{searchQuery ? 'No tasks found matching your search.' : 'No upcoming tasks.'}</p>
                                     </div>
                                 ) : (
-                                    getAllTasksSorted().map(task => (
-                                        <div key={`${task.projectId}-${task.id}`} className="task-item">
-                                            <span className="task-project-badge">{task.projectName}</span>
-                                            <div className="task-header">
-                                                <div className="task-title">{task.name}</div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button 
-                                                        className="btn btn-secondary btn-small"
-                                                        onClick={() => {
-                                                            const project = projects.find(p => p.id === task.projectId);
-                                                            openTaskModal(project, task);
-                                                        }}
-                                                    >
-                                                        ✏️
-                                                    </button>
-                                                    <button 
-                                                        className="btn btn-danger btn-small"
-                                                        onClick={() => deleteTask(task.projectId, task.id)}
-                                                    >
-                                                        🗑️
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="task-details">
-                                                <div className="task-field">
-                                                    <div className="task-label">Owner</div>
-                                                    <div className="task-value">{task.owner || 'Unassigned'}</div>
-                                                </div>
-                                                <div className="task-field">
-                                                    <div className="task-label">Status</div>
-                                                    <div className="task-value">
-                                                        <span className={`status-badge ${getStatusClass(task.status)}`}>
-                                                            {task.status}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="task-field">
-                                                    <div className="task-label">Due Date</div>
-                                                    <div className="task-value">{task.dueDate || 'Not set'}</div>
-                                                </div>
-                                                <div className="task-field">
-                                                    <div className="task-label">Priority</div>
-                                                    <div className={`task-value ${getPriorityClass(task.priority)}`}>
-                                                        {task.priority}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {task.notes && (
-                                                <div className="task-notes">
-                                                    📝 {task.notes}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
+                                    filterTasksBySearch(getAllTasksSorted()).map(task => renderTaskItem(task))
                                 )}
                             </div>
                         </div>
@@ -1289,56 +1423,69 @@
                                                     <p>No tasks yet. Click "Add Task" to create one.</p>
                                                 </div>
                                             ) : (
-                                                project.tasks.map(task => (
-                                                    <div key={task.id} className="task-item">
-                                                        <div className="task-header">
-                                                            <div className="task-title">{task.name}</div>
-                                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                                <button 
-                                                                    className="btn btn-secondary btn-small"
-                                                                    onClick={() => openTaskModal(project, task)}
-                                                                >
-                                                                    ✏️
-                                                                </button>
-                                                                <button 
-                                                                    className="btn btn-danger btn-small"
-                                                                    onClick={() => deleteTask(project.id, task.id)}
-                                                                >
-                                                                    🗑️
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div className="task-details">
-                                                            <div className="task-field">
-                                                                <div className="task-label">Owner</div>
-                                                                <div className="task-value">{task.owner || 'Unassigned'}</div>
-                                                            </div>
-                                                            <div className="task-field">
-                                                                <div className="task-label">Status</div>
-                                                                <div className="task-value">
-                                                                    <span className={`status-badge ${getStatusClass(task.status)}`}>
-                                                                        {task.status}
-                                                                    </span>
+                                                project.tasks.map(task => {
+                                                    const daysRemaining = getDaysRemaining(task.dueDate);
+                                                    const daysText = formatDaysRemaining(daysRemaining);
+                                                    const daysClass = getDaysRemainingClass(daysRemaining);
+
+                                                    return (
+                                                        <div key={task.id} className="task-item">
+                                                            <div className="task-header">
+                                                                <div className="task-title">
+                                                                    {task.name}
+                                                                    {daysText && (
+                                                                        <span className={`days-remaining ${daysClass}`}>
+                                                                            {daysText}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                                    <button 
+                                                                        className="btn btn-secondary btn-small"
+                                                                        onClick={() => openTaskModal(project, task)}
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button 
+                                                                        className="btn btn-danger btn-small"
+                                                                        onClick={() => deleteTask(project.id, task.id)}
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
                                                                 </div>
                                                             </div>
-                                                            <div className="task-field">
-                                                                <div className="task-label">Due Date</div>
-                                                                <div className="task-value">{task.dueDate || 'Not set'}</div>
-                                                            </div>
-                                                            <div className="task-field">
-                                                                <div className="task-label">Priority</div>
-                                                                <div className={`task-value ${getPriorityClass(task.priority)}`}>
-                                                                    {task.priority}
+                                                            <div className="task-details">
+                                                                <div className="task-field">
+                                                                    <div className="task-label">Owner</div>
+                                                                    <div className="task-value">{task.owner || 'Unassigned'}</div>
+                                                                </div>
+                                                                <div className="task-field">
+                                                                    <div className="task-label">Status</div>
+                                                                    <div className="task-value">
+                                                                        <span className={`status-badge ${getStatusClass(task.status)}`}>
+                                                                            {task.status}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="task-field">
+                                                                    <div className="task-label">Due Date</div>
+                                                                    <div className="task-value">{task.dueDate || 'Not set'}</div>
+                                                                </div>
+                                                                <div className="task-field">
+                                                                    <div className="task-label">Priority</div>
+                                                                    <div className={`task-value ${getPriorityClass(task.priority)}`}>
+                                                                        {task.priority}
+                                                                    </div>
                                                                 </div>
                                                             </div>
+                                                            {task.notes && (
+                                                                <div className="task-notes">
+                                                                    📝 {task.notes}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        {task.notes && (
-                                                            <div className="task-notes">
-                                                                📝 {task.notes}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     </div>
@@ -1384,7 +1531,6 @@
                                     {editingTask ? 'Edit Task' : 'Create New Task'}
                                 </div>
                                 
-                                {/* Project Selector - Only show when creating new task without project context */}
                                 {!currentProject && !editingTask && (
                                     <div className="form-group">
                                         <label className="form-label">Project *</label>
