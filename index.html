@@ -967,6 +967,26 @@
                 return allTasks;
             };
 
+            // Get all tasks sorted chronologically (excluding today's tasks)
+            const getAllTasksSorted = () => {
+                const today = getTodayDate();
+                const allTasks = getAllTasksWithProject();
+                
+                // Exclude today's tasks
+                const futureTasks = allTasks.filter(task => task.dueDate !== today);
+                
+                // Sort by due date (chronologically)
+                return futureTasks.sort((a, b) => {
+                    // Tasks without due date go to the end
+                    if (!a.dueDate && !b.dueDate) return 0;
+                    if (!a.dueDate) return 1;
+                    if (!b.dueDate) return -1;
+                    
+                    // Compare dates
+                    return new Date(a.dueDate) - new Date(b.dueDate);
+                });
+            };
+
             // Get tasks due today
             const getTasksDueToday = () => {
                 const today = getTodayDate();
@@ -1093,8 +1113,8 @@
                             </button>
                         </div>
 
-                    {/* Due Today Section */}
-                    {getTasksDueToday().length > 0 && (
+                    {/* Due Today Section - Solo se muestra en la vista "All Tasks" */}
+                    {currentView === 'all-tasks' && getTasksDueToday().length > 0 && (
                         <div className="due-today-section">
                             <div className="due-today-header">
                                 <h2>🔥 Due Today</h2>
@@ -1149,19 +1169,19 @@
                         </div>
                     )}
 
-                    {/* All Tasks View */}
+                    {/* All Tasks View - Ahora con orden cronológico */}
                     {currentView === 'all-tasks' && (
                         <div className="project-card">
                             <div className="project-header">
-                                <h2 className="project-title">All Tasks ({getAllTasksWithProject().length})</h2>
+                                <h2 className="project-title">📅 Upcoming Tasks ({getAllTasksSorted().length})</h2>
                             </div>
                             <div className="tasks-list">
-                                {getAllTasksWithProject().length === 0 ? (
+                                {getAllTasksSorted().length === 0 ? (
                                     <div className="empty-state">
-                                        <p>No tasks yet. Create a project and add some tasks to get started.</p>
+                                        <p>No upcoming tasks. All tasks are either due today or have no due date set.</p>
                                     </div>
                                 ) : (
-                                    getAllTasksWithProject().map(task => (
+                                    getAllTasksSorted().map(task => (
                                         <div key={`${task.projectId}-${task.id}`} className="task-item">
                                             <span className="task-project-badge">{task.projectName}</span>
                                             <div className="task-header">
