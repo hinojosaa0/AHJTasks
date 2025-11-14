@@ -987,10 +987,12 @@
                 });
             };
 
-            // Get tasks due today
+            // Get tasks due today (excluding completed tasks)
             const getTasksDueToday = () => {
                 const today = getTodayDate();
-                return getAllTasksWithProject().filter(task => task.dueDate === today);
+                return getAllTasksWithProject().filter(task => 
+                    task.dueDate === today && task.status !== 'Completed'
+                );
             };
 
             // Filter projects based on selection
