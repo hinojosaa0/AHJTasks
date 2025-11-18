@@ -1193,7 +1193,10 @@
 
             const getTodayDate = () => {
                 const today = new Date();
-                return today.toISOString().split('T')[0];
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             };
 
             const formatDate = (timestamp) => {
@@ -1663,13 +1666,14 @@
                                                     const daysRemaining = getDaysRemaining(task.dueDate);
                                                     const daysText = formatDaysRemaining(daysRemaining);
                                                     const daysClass = getDaysRemainingClass(daysRemaining);
+                                                    const showDaysBadge = task.status !== 'Completed' && daysText;
 
                                                     return (
                                                         <div key={task.id} className="task-item">
                                                             <div className="task-header">
                                                                 <div className="task-title">
                                                                     {task.name}
-                                                                    {daysText && (
+                                                                    {showDaysBadge && (
                                                                         <span className={`days-remaining ${daysClass}`}>
                                                                             {daysText}
                                                                         </span>
