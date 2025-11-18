@@ -776,6 +776,58 @@
             color: white;
         }
 
+        /* Notes Styles */
+        .note-item {
+            background: #1a1a2e;
+            border: 2px solid #3a506b;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .note-item:hover {
+            border-color: #5dade2;
+            box-shadow: 0 4px 12px rgba(93, 173, 226, 0.2);
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        .note-title {
+            font-weight: 600;
+            color: #ecf0f1;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        .note-content {
+            color: #bdc3c7;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+        }
+
+        .note-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .note-date {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -838,8 +890,10 @@
             const [projects, setProjects] = useState([]);
             const [showProjectModal, setShowProjectModal] = useState(false);
             const [showTaskModal, setShowTaskModal] = useState(false);
+            const [showNoteModal, setShowNoteModal] = useState(false);
             const [currentProject, setCurrentProject] = useState(null);
             const [editingTask, setEditingTask] = useState(null);
+            const [editingNote, setEditingNote] = useState(null);
             const [newProjectName, setNewProjectName] = useState('');
             const [currentView, setCurrentView] = useState('by-project');
             const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
@@ -853,6 +907,11 @@
                 dueDate: '',
                 priority: 'Medium',
                 notes: ''
+            });
+            const [noteForm, setNoteForm] = useState({
+                title: '',
+                content: '',
+                projectId: ''
             });
 
             // Load projects from Firebase
@@ -870,6 +929,10 @@
                             tasks: data[key].tasks ? Object.keys(data[key].tasks).map(taskKey => ({
                                 id: taskKey,
                                 ...data[key].tasks[taskKey]
+                            })) : [],
+                            notes: data[key].notes ? Object.keys(data[key].notes).map(noteKey => ({
+                                id: noteKey,
+                                ...data[key].notes[noteKey]
                             })) : []
                         }));
                         setProjects(projectsList);
@@ -892,7 +955,8 @@
                     const newProject = {
                         id: Date.now().toString(),
                         name: newProjectName,
-                        tasks: []
+                        tasks: [],
+                        notes: []
                     };
                     setProjects([...projects, newProject]);
                 }
@@ -952,6 +1016,24 @@
                 setShowTaskModal(true);
             };
 
+            const openNoteModal = (note = null) => {
+                setEditingNote(note);
+                if (note) {
+                    setNoteForm({
+                        title: note.title,
+                        content: note.content,
+                        projectId: note.projectId
+                    });
+                } else {
+                    setNoteForm({
+                        title: '',
+                        content: '',
+                        projectId: ''
+                    });
+                }
+                setShowNoteModal(true);
+            };
+
             const saveTask = () => {
                 if (!taskForm.name.trim()) return;
                 
@@ -996,6 +1078,56 @@
                 setSelectedProjectId('');
             };
 
+            const saveNote = () => {
+                if (!noteForm.title.trim() || !noteForm.content.trim()) {
+                    alert('Please fill in both title and content');
+                    return;
+                }
+                
+                if (!noteForm.projectId) {
+                    alert('Please select a project');
+                    return;
+                }
+
+                const noteData = {
+                    ...noteForm,
+                    createdAt: editingNote ? editingNote.createdAt : Date.now(),
+                    updatedAt: Date.now()
+                };
+
+                if (isConfigured) {
+                    if (editingNote) {
+                        database.ref(`projects/${noteForm.projectId}/notes/${editingNote.id}`).update(noteData);
+                    } else {
+                        database.ref(`projects/${noteForm.projectId}/notes`).push(noteData);
+                    }
+                } else {
+                    const updatedProjects = projects.map(project => {
+                        if (project.id === noteForm.projectId) {
+                            if (editingNote) {
+                                return {
+                                    ...project,
+                                    notes: project.notes.map(n => 
+                                        n.id === editingNote.id ? { ...n, ...noteData } : n
+                                    )
+                                };
+                            } else {
+                                return {
+                                    ...project,
+                                    notes: [...(project.notes || []), { id: Date.now().toString(), ...noteData }]
+                                };
+                            }
+                        }
+                        return project;
+                    });
+                    setProjects(updatedProjects);
+                }
+
+                setShowNoteModal(false);
+                setEditingNote(null);
+                setNoteForm({ title: '', content: '', projectId: '' });
+            };
+
             const deleteTask = (projectId, taskId) => {
                 if (!confirm('Delete this task?')) return;
 
@@ -1007,6 +1139,25 @@
                             return {
                                 ...project,
                                 tasks: project.tasks.filter(t => t.id !== taskId)
+                            };
+                        }
+                        return project;
+                    });
+                    setProjects(updatedProjects);
+                }
+            };
+
+            const deleteNote = (projectId, noteId) => {
+                if (!confirm('Delete this note?')) return;
+
+                if (isConfigured) {
+                    database.ref(`projects/${projectId}/notes/${noteId}`).remove();
+                } else {
+                    const updatedProjects = projects.map(project => {
+                        if (project.id === projectId) {
+                            return {
+                                ...project,
+                                notes: project.notes.filter(n => n.id !== noteId)
                             };
                         }
                         return project;
@@ -1045,6 +1196,17 @@
                 return today.toISOString().split('T')[0];
             };
 
+            const formatDate = (timestamp) => {
+                const date = new Date(timestamp);
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
+
             const getAllTasksWithProject = () => {
                 const allTasks = [];
                 projects.forEach(project => {
@@ -1059,6 +1221,21 @@
                     }
                 });
                 return allTasks;
+            };
+
+            const getAllNotesWithProject = () => {
+                const allNotes = [];
+                projects.forEach(project => {
+                    if (project.notes) {
+                        project.notes.forEach(note => {
+                            allNotes.push({
+                                ...note,
+                                projectName: project.name
+                            });
+                        });
+                    }
+                });
+                return allNotes.sort((a, b) => b.updatedAt - a.updatedAt);
             };
 
             // Calculate days remaining
@@ -1325,12 +1502,71 @@
                                 >
                                     📋 All Tasks
                                 </button>
+                                <button 
+                                    className={`toggle-btn ${currentView === 'notes' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('notes')}
+                                >
+                                    📝 Notes
+                                </button>
                             </div>
 
                             <button className="btn btn-primary" onClick={() => setShowProjectModal(true)}>
                                 ➕ New Project
                             </button>
+
+                            {currentView === 'notes' && (
+                                <button className="btn btn-primary" onClick={() => openNoteModal()}>
+                                    ➕ New Note
+                                </button>
+                            )}
                         </div>
+
+                    {/* Notes View */}
+                    {currentView === 'notes' && (
+                        <div className="project-card">
+                            <div className="project-header">
+                                <h2 className="project-title">📝 All Notes ({getAllNotesWithProject().length})</h2>
+                            </div>
+                            <div className="tasks-list">
+                                {getAllNotesWithProject().length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">📝</div>
+                                        <h3>No notes yet</h3>
+                                        <p>Click "New Note" to create your first note</p>
+                                    </div>
+                                ) : (
+                                    getAllNotesWithProject().map(note => (
+                                        <div key={note.id} className="note-item">
+                                            <span className="task-project-badge">{note.projectName}</span>
+                                            <div className="note-header">
+                                                <div className="note-title">{note.title}</div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button 
+                                                        className="btn btn-secondary btn-small"
+                                                        onClick={() => openNoteModal(note)}
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    <button 
+                                                        className="btn btn-danger btn-small"
+                                                        onClick={() => deleteNote(note.projectId, note.id)}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="note-content">{note.content}</div>
+                                            <div className="note-meta">
+                                                <div className="note-date">
+                                                    🕒 Updated: {formatDate(note.updatedAt)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Overdue Section */}
                     {currentView === 'all-tasks' && getOverdueTasks().length > 0 && (
@@ -1618,6 +1854,63 @@
                                     </button>
                                     <button className="btn btn-primary" onClick={saveTask}>
                                         {editingTask ? 'Update Task' : 'Create Task'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Note Modal */}
+                    {showNoteModal && (
+                        <div className="modal" onClick={() => setShowNoteModal(false)}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    {editingNote ? 'Edit Note' : 'Create New Note'}
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label className="form-label">Project *</label>
+                                    <select
+                                        className="form-select"
+                                        value={noteForm.projectId}
+                                        onChange={e => setNoteForm({...noteForm, projectId: e.target.value})}
+                                        disabled={editingNote}
+                                    >
+                                        <option value="">Select a project</option>
+                                        {projects.map(project => (
+                                            <option key={project.id} value={project.id}>
+                                                {project.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label className="form-label">Title</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={noteForm.title}
+                                        onChange={e => setNoteForm({...noteForm, title: e.target.value})}
+                                        placeholder="Enter note title"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Content</label>
+                                    <textarea
+                                        className="form-textarea"
+                                        value={noteForm.content}
+                                        onChange={e => setNoteForm({...noteForm, content: e.target.value})}
+                                        placeholder="Enter note content"
+                                        style={{ minHeight: '200px' }}
+                                    />
+                                </div>
+                                <div className="modal-actions">
+                                    <button className="btn btn-secondary" onClick={() => setShowNoteModal(false)}>
+                                        Cancel
+                                    </button>
+                                    <button className="btn btn-primary" onClick={saveNote}>
+                                        {editingNote ? 'Update Note' : 'Create Note'}
                                     </button>
                                 </div>
                             </div>
