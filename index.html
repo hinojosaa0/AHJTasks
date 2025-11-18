@@ -260,6 +260,17 @@
             border-color: #5dade2;
         }
 
+        .btn-info {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+        }
+
         .btn-danger {
             background: #e74c3c;
             color: white;
@@ -828,6 +839,37 @@
             gap: 4px;
         }
 
+        /* Project Notes Section */
+        .project-notes-section {
+            background: #1a1a2e;
+            border: 2px solid #9b59b6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .project-notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .project-notes-title {
+            color: #9b59b6;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .notes-badge {
+            background: #9b59b6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -900,6 +942,7 @@
             const [sidebarOpen, setSidebarOpen] = useState(false);
             const [selectedProjectId, setSelectedProjectId] = useState('');
             const [searchQuery, setSearchQuery] = useState('');
+            const [showingNotesForProject, setShowingNotesForProject] = useState(null);
             const [taskForm, setTaskForm] = useState({
                 name: '',
                 owner: '',
@@ -1163,6 +1206,14 @@
                         return project;
                     });
                     setProjects(updatedProjects);
+                }
+            };
+
+            const toggleProjectNotes = (projectId) => {
+                if (showingNotesForProject === projectId) {
+                    setShowingNotesForProject(null);
+                } else {
+                    setShowingNotesForProject(projectId);
                 }
             };
 
@@ -1635,11 +1686,21 @@
                             ) : (
                                 getFilteredProjects().map(project => {
                                 const progress = calculateProgress(project.tasks);
+                                const hasNotes = project.notes && project.notes.length > 0;
+                                
                                 return (
                                     <div key={project.id} className="project-card">
                                         <div className="project-header">
                                             <h2 className="project-title">{project.name}</h2>
                                             <div className="project-controls">
+                                                {hasNotes && (
+                                                    <button 
+                                                        className="btn btn-info btn-small"
+                                                        onClick={() => toggleProjectNotes(project.id)}
+                                                    >
+                                                        📝 {showingNotesForProject === project.id ? 'Hide' : 'View'} Notes ({project.notes.length})
+                                                    </button>
+                                                )}
                                                 <button 
                                                     className="btn btn-primary btn-small"
                                                     onClick={() => openTaskModal(project)}
@@ -1661,6 +1722,45 @@
                                         <div className="progress-bar">
                                             <div className="progress-fill" style={{ width: `${progress}%` }}></div>
                                         </div>
+
+                                        {/* Project Notes Section */}
+                                        {showingNotesForProject === project.id && hasNotes && (
+                                            <div className="project-notes-section">
+                                                <div className="project-notes-header">
+                                                    <h3 className="project-notes-title">📝 Project Notes</h3>
+                                                    <span className="notes-badge">{project.notes.length}</span>
+                                                </div>
+                                                <div className="tasks-list">
+                                                    {project.notes.sort((a, b) => b.updatedAt - a.updatedAt).map(note => (
+                                                        <div key={note.id} className="note-item">
+                                                            <div className="note-header">
+                                                                <div className="note-title">{note.title}</div>
+                                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                                    <button 
+                                                                        className="btn btn-secondary btn-small"
+                                                                        onClick={() => openNoteModal(note)}
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button 
+                                                                        className="btn btn-danger btn-small"
+                                                                        onClick={() => deleteNote(project.id, note.id)}
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="note-content">{note.content}</div>
+                                                            <div className="note-meta">
+                                                                <div className="note-date">
+                                                                    🕒 Updated: {formatDate(note.updatedAt)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="tasks-list">
                                             {!project.tasks || project.tasks.length === 0 ? (
