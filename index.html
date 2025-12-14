@@ -1044,7 +1044,27 @@
             padding: 24px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             border: 1px solid #3a506b;
+            overflow: hidden;
+        }
+
+        .calendar-wrapper {
             overflow-x: auto;
+            margin: 0 -4px;
+            padding: 0 4px 8px 4px;
+        }
+
+        .calendar-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .calendar-wrapper::-webkit-scrollbar-track {
+            background: #1a1a2e;
+            border-radius: 4px;
+        }
+
+        .calendar-wrapper::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 4px;
         }
 
         .calendar-header {
@@ -1119,12 +1139,13 @@
 
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(7, minmax(120px, 1fr));
             gap: 1px;
             background: #3a506b;
             border-radius: 12px;
             overflow: hidden;
-            min-width: 700px;
+            width: 100%;
+            min-width: 840px;
         }
 
         .calendar-day-header {
@@ -1134,6 +1155,8 @@
             font-weight: 600;
             color: #5dade2;
             font-size: 14px;
+            overflow: hidden;
+            min-width: 0;
         }
 
         .calendar-day {
@@ -1143,6 +1166,8 @@
             transition: background 0.2s;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
         }
 
         .calendar-day.weekly {
@@ -1177,10 +1202,11 @@
 
         .calendar-tasks-container {
             flex: 1;
-            overflow-y: auto;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 0;
         }
 
         .calendar-task {
@@ -1195,6 +1221,8 @@
             overflow: hidden;
             text-overflow: ellipsis;
             flex-shrink: 0;
+            min-width: 0;
+            max-width: 100%;
         }
 
         .calendar-task:hover {
@@ -2010,6 +2038,7 @@
                             </div>
                         </div>
 
+                        <div className="calendar-wrapper">
                         <div className="calendar-grid">
                             {dayNames.map(day => (
                                 <div key={day} className="calendar-day-header">{day}</div>
@@ -2048,6 +2077,7 @@
                                     </div>
                                 );
                             })}
+                        </div>
                         </div>
                     </div>
                 );
