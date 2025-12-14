@@ -1215,7 +1215,7 @@
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 11px;
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s;
             white-space: nowrap;
             overflow: hidden;
@@ -1223,6 +1223,25 @@
             flex-shrink: 0;
             min-width: 0;
             max-width: 100%;
+            user-select: none;
+        }
+
+        .calendar-task:active {
+            cursor: grabbing;
+        }
+
+        .calendar-task.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .calendar-day.drag-over {
+            background: rgba(52, 152, 219, 0.3);
+            box-shadow: inset 0 0 0 2px #3498db;
+        }
+
+        .calendar-day.drag-over.other-month {
+            opacity: 1;
         }
 
         .calendar-task:hover {
@@ -1270,6 +1289,57 @@
 
         .today-btn:hover {
             background: #2ecc71;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .drag-hint {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 8px;
+        }
+
+        .drag-hint-icon {
+            font-size: 16px;
         }
 
         @media (max-width: 768px) {
@@ -1367,6 +1437,9 @@
             const [expandedProjects, setExpandedProjects] = useState({});
             const [calendarView, setCalendarView] = useState('monthly');
             const [calendarDate, setCalendarDate] = useState(new Date());
+            const [draggingTask, setDraggingTask] = useState(null);
+            const [dragOverDate, setDragOverDate] = useState(null);
+            const [toast, setToast] = useState(null);
             const [taskForm, setTaskForm] = useState({
                 name: '',
                 owner: '',
@@ -1930,6 +2003,102 @@
                 setCalendarDate(new Date());
             };
 
+            // Drag and Drop handlers
+            const handleDragStart = (e, task) => {
+                setDraggingTask(task);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    taskId: task.id,
+                    projectId: task.projectId
+                }));
+                // Add dragging class after a small delay to not affect the drag image
+                setTimeout(() => {
+                    e.target.classList.add('dragging');
+                }, 0);
+            };
+
+            const handleDragEnd = (e) => {
+                setDraggingTask(null);
+                setDragOverDate(null);
+                e.target.classList.remove('dragging');
+            };
+
+            const handleDragOver = (e, dateStr) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragOverDate !== dateStr) {
+                    setDragOverDate(dateStr);
+                }
+            };
+
+            const handleDragLeave = (e) => {
+                // Only clear if we're leaving the day cell entirely
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                    setDragOverDate(null);
+                }
+            };
+
+            const showToast = (message) => {
+                setToast(message);
+                setTimeout(() => setToast(null), 3000);
+            };
+
+            const formatDateForDisplay = (dateStr) => {
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric'
+                });
+            };
+
+            const handleDrop = (e, newDate) => {
+                e.preventDefault();
+                setDragOverDate(null);
+                
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    const { taskId, projectId } = data;
+                    
+                    // Find the task to get its name
+                    let taskName = '';
+                    projects.forEach(p => {
+                        if (p.id === projectId && p.tasks) {
+                            const task = p.tasks.find(t => t.id === taskId);
+                            if (task) taskName = task.name;
+                        }
+                    });
+                    
+                    // Update the task's due date
+                    if (isConfigured) {
+                        database.ref(`projects/${projectId}/tasks/${taskId}`).update({
+                            dueDate: newDate
+                        });
+                    } else {
+                        const updatedProjects = projects.map(project => {
+                            if (project.id === projectId) {
+                                return {
+                                    ...project,
+                                    tasks: project.tasks.map(t => 
+                                        t.id === taskId ? { ...t, dueDate: newDate } : t
+                                    )
+                                };
+                            }
+                            return project;
+                        });
+                        setProjects(updatedProjects);
+                    }
+                    
+                    // Show toast notification
+                    showToast(`"${taskName}" moved to ${formatDateForDisplay(newDate)}`);
+                    
+                } catch (err) {
+                    console.error('Drop error:', err);
+                }
+                
+                setDraggingTask(null);
+            };
+
             // Render task item
             const renderTaskItem = (task) => {
                 const daysRemaining = getDaysRemaining(task.dueDate);
@@ -2037,6 +2206,11 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <div className="drag-hint">
+                            <span className="drag-hint-icon">💡</span>
+                            <span>Drag and drop tasks to change their due date</span>
+                        </div>
 
                         <div className="calendar-wrapper">
                         <div className="calendar-grid">
@@ -2047,11 +2221,15 @@
                                 const tasks = getTasksForDate(dayInfo.date);
                                 const dateStr = formatDateForCompare(dayInfo.date);
                                 const maxTasksToShow = calendarView === 'weekly' ? 10 : 3;
+                                const isDragOver = dragOverDate === dateStr;
 
                                 return (
                                     <div 
                                         key={index} 
-                                        className={`calendar-day ${calendarView === 'weekly' ? 'weekly' : ''} ${!dayInfo.isCurrentMonth ? 'other-month' : ''} ${isToday(dayInfo.date) ? 'today' : ''}`}
+                                        className={`calendar-day ${calendarView === 'weekly' ? 'weekly' : ''} ${!dayInfo.isCurrentMonth ? 'other-month' : ''} ${isToday(dayInfo.date) ? 'today' : ''} ${isDragOver ? 'drag-over' : ''}`}
+                                        onDragOver={(e) => handleDragOver(e, dateStr)}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => handleDrop(e, dateStr)}
                                     >
                                         <div className="calendar-date">{dayInfo.date.getDate()}</div>
                                         <div className="calendar-tasks-container">
@@ -2059,11 +2237,14 @@
                                                 <div 
                                                     key={task.id}
                                                     className={`calendar-task ${task.priority === 'High' ? 'high-priority' : ''} ${task.status === 'Completed' ? 'completed' : ''} ${dateStr < today && task.status !== 'Completed' ? 'overdue' : ''}`}
+                                                    draggable="true"
+                                                    onDragStart={(e) => handleDragStart(e, task)}
+                                                    onDragEnd={handleDragEnd}
                                                     onClick={() => {
                                                         const project = projects.find(p => p.id === task.projectId);
                                                         openTaskModal(project, task);
                                                     }}
-                                                    title={`${task.name} (${task.projectName})`}
+                                                    title={`${task.name} (${task.projectName}) - Drag to change date`}
                                                 >
                                                     {task.name}
                                                 </div>
@@ -2255,6 +2436,14 @@
 
                         {/* Calendar View */}
                         {currentView === 'calendar' && renderCalendar()}
+
+                        {/* Toast Notification */}
+                        {toast && (
+                            <div className="toast">
+                                <span>✓</span>
+                                <span>{toast}</span>
+                            </div>
+                        )}
 
                     {/* Notes View */}
                     {currentView === 'notes' && (
