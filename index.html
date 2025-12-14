@@ -41,7 +41,7 @@
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             border-radius: 16px;
             padding: 24px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             border: 1px solid #3a506b;
             display: flex;
@@ -81,6 +81,81 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
             background: linear-gradient(135deg, #5dade2 0%, #3498db 100%);
+        }
+
+        /* Task Stats Bar */
+        .task-stats-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #3a506b;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .stat-icon {
+            font-size: 28px;
+        }
+
+        .stat-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ecf0f1;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card.due-today {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .stat-card.due-today .stat-number {
+            color: #e74c3c;
+        }
+
+        .stat-card.overdue {
+            border-left: 4px solid #c0392b;
+        }
+
+        .stat-card.overdue .stat-number {
+            color: #c0392b;
+        }
+
+        .stat-card.total {
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-card.total .stat-number {
+            color: #3498db;
+        }
+
+        .stat-card.completed {
+            border-left: 4px solid #27ae60;
+        }
+
+        .stat-card.completed .stat-number {
+            color: #27ae60;
         }
 
         /* Sidebar Styles */
@@ -962,13 +1037,14 @@
             border-top: 1px solid #3a506b;
         }
 
-        /* Calendar Styles */
+        /* FIXED Calendar Styles */
         .calendar-container {
             background: #2c3e50;
             border-radius: 16px;
             padding: 24px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             border: 1px solid #3a506b;
+            overflow-x: auto;
         }
 
         .calendar-header {
@@ -976,6 +1052,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
         .calendar-nav {
@@ -1041,23 +1119,17 @@
 
         .calendar-grid {
             display: grid;
+            grid-template-columns: repeat(7, 1fr);
             gap: 1px;
             background: #3a506b;
             border-radius: 12px;
             overflow: hidden;
-        }
-
-        .calendar-grid.monthly {
-            grid-template-columns: repeat(7, 1fr);
-        }
-
-        .calendar-grid.weekly {
-            grid-template-columns: repeat(7, 1fr);
+            min-width: 700px;
         }
 
         .calendar-day-header {
             background: #1a1a2e;
-            padding: 12px;
+            padding: 12px 8px;
             text-align: center;
             font-weight: 600;
             color: #5dade2;
@@ -1066,13 +1138,15 @@
 
         .calendar-day {
             background: #2c3e50;
-            min-height: 120px;
+            min-height: 100px;
             padding: 8px;
             transition: background 0.2s;
+            display: flex;
+            flex-direction: column;
         }
 
         .calendar-day.weekly {
-            min-height: 400px;
+            min-height: 350px;
         }
 
         .calendar-day:hover {
@@ -1086,7 +1160,7 @@
 
         .calendar-day.today {
             background: rgba(52, 152, 219, 0.2);
-            border: 2px solid #3498db;
+            box-shadow: inset 0 0 0 2px #3498db;
         }
 
         .calendar-date {
@@ -1094,10 +1168,19 @@
             font-weight: 600;
             color: #ecf0f1;
             margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .calendar-day.today .calendar-date {
             color: #3498db;
+        }
+
+        .calendar-tasks-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .calendar-task {
@@ -1106,12 +1189,12 @@
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 11px;
-            margin-bottom: 4px;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            flex-shrink: 0;
         }
 
         .calendar-task:hover {
@@ -1138,6 +1221,7 @@
             text-align: center;
             padding: 4px;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .calendar-more:hover {
@@ -1167,6 +1251,8 @@
 
             .header {
                 padding: 20px;
+                flex-direction: column;
+                gap: 16px;
             }
 
             .header h1 {
@@ -1192,6 +1278,14 @@
             .calendar-task {
                 font-size: 10px;
                 padding: 2px 4px;
+            }
+
+            .task-stats-bar {
+                flex-direction: column;
+            }
+
+            .stat-card {
+                min-width: 100%;
             }
         }
     </style>
@@ -1236,15 +1330,15 @@
             const [editingTask, setEditingTask] = useState(null);
             const [editingNote, setEditingNote] = useState(null);
             const [newProjectName, setNewProjectName] = useState('');
-            const [currentView, setCurrentView] = useState('calendar'); // Default to calendar view
+            const [currentView, setCurrentView] = useState('calendar');
             const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
             const [sidebarOpen, setSidebarOpen] = useState(false);
             const [selectedProjectId, setSelectedProjectId] = useState('');
             const [searchQuery, setSearchQuery] = useState('');
             const [showingNotesForProject, setShowingNotesForProject] = useState(null);
-            const [expandedProjects, setExpandedProjects] = useState({}); // Track expanded projects
-            const [calendarView, setCalendarView] = useState('monthly'); // 'weekly' or 'monthly'
-            const [calendarDate, setCalendarDate] = useState(new Date()); // Current calendar date
+            const [expandedProjects, setExpandedProjects] = useState({});
+            const [calendarView, setCalendarView] = useState('monthly');
+            const [calendarDate, setCalendarDate] = useState(new Date());
             const [taskForm, setTaskForm] = useState({
                 name: '',
                 owner: '',
@@ -1657,6 +1751,14 @@
                 );
             };
 
+            const getTotalTasks = () => {
+                return getAllTasksWithProject().filter(task => task.status !== 'Completed').length;
+            };
+
+            const getCompletedTasks = () => {
+                return getAllTasksWithProject().filter(task => task.status === 'Completed').length;
+            };
+
             const getAllTasksSorted = () => {
                 const today = getTodayDate();
                 const allTasks = getAllTasksWithProject();
@@ -1908,7 +2010,7 @@
                             </div>
                         </div>
 
-                        <div className={`calendar-grid ${calendarView}`}>
+                        <div className="calendar-grid">
                             {dayNames.map(day => (
                                 <div key={day} className="calendar-day-header">{day}</div>
                             ))}
@@ -1920,27 +2022,29 @@
                                 return (
                                     <div 
                                         key={index} 
-                                        className={`calendar-day ${calendarView} ${!dayInfo.isCurrentMonth ? 'other-month' : ''} ${isToday(dayInfo.date) ? 'today' : ''}`}
+                                        className={`calendar-day ${calendarView === 'weekly' ? 'weekly' : ''} ${!dayInfo.isCurrentMonth ? 'other-month' : ''} ${isToday(dayInfo.date) ? 'today' : ''}`}
                                     >
                                         <div className="calendar-date">{dayInfo.date.getDate()}</div>
-                                        {tasks.slice(0, maxTasksToShow).map(task => (
-                                            <div 
-                                                key={task.id}
-                                                className={`calendar-task ${task.priority === 'High' ? 'high-priority' : ''} ${task.status === 'Completed' ? 'completed' : ''} ${dateStr < today && task.status !== 'Completed' ? 'overdue' : ''}`}
-                                                onClick={() => {
-                                                    const project = projects.find(p => p.id === task.projectId);
-                                                    openTaskModal(project, task);
-                                                }}
-                                                title={`${task.name} (${task.projectName})`}
-                                            >
-                                                {task.name}
-                                            </div>
-                                        ))}
-                                        {tasks.length > maxTasksToShow && (
-                                            <div className="calendar-more">
-                                                +{tasks.length - maxTasksToShow} more
-                                            </div>
-                                        )}
+                                        <div className="calendar-tasks-container">
+                                            {tasks.slice(0, maxTasksToShow).map(task => (
+                                                <div 
+                                                    key={task.id}
+                                                    className={`calendar-task ${task.priority === 'High' ? 'high-priority' : ''} ${task.status === 'Completed' ? 'completed' : ''} ${dateStr < today && task.status !== 'Completed' ? 'overdue' : ''}`}
+                                                    onClick={() => {
+                                                        const project = projects.find(p => p.id === task.projectId);
+                                                        openTaskModal(project, task);
+                                                    }}
+                                                    title={`${task.name} (${task.projectName})`}
+                                                >
+                                                    {task.name}
+                                                </div>
+                                            ))}
+                                            {tasks.length > maxTasksToShow && (
+                                                <div className="calendar-more">
+                                                    +{tasks.length - maxTasksToShow} more
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -2004,6 +2108,38 @@
                             <button className="add-task-global-btn" onClick={openGlobalTaskModal}>
                                 ➕ Add Task
                             </button>
+                        </div>
+
+                        {/* Task Stats Bar - Always Visible */}
+                        <div className="task-stats-bar">
+                            <div className="stat-card due-today">
+                                <div className="stat-icon">🔥</div>
+                                <div className="stat-content">
+                                    <div className="stat-number">{getTasksDueToday().length}</div>
+                                    <div className="stat-label">Due Today</div>
+                                </div>
+                            </div>
+                            <div className="stat-card overdue">
+                                <div className="stat-icon">⚠️</div>
+                                <div className="stat-content">
+                                    <div className="stat-number">{getOverdueTasks().length}</div>
+                                    <div className="stat-label">Overdue</div>
+                                </div>
+                            </div>
+                            <div className="stat-card total">
+                                <div className="stat-icon">📋</div>
+                                <div className="stat-content">
+                                    <div className="stat-number">{getTotalTasks()}</div>
+                                    <div className="stat-label">Pending Tasks</div>
+                                </div>
+                            </div>
+                            <div className="stat-card completed">
+                                <div className="stat-icon">✅</div>
+                                <div className="stat-content">
+                                    <div className="stat-number">{getCompletedTasks()}</div>
+                                    <div className="stat-label">Completed</div>
+                                </div>
+                            </div>
                         </div>
 
                         {!isConfigured && (
