@@ -1864,9 +1864,20 @@
                 const today = getTodayDate();
                 const allTasks = getAllTasksWithProject();
                 
-                const futureTasks = allTasks.filter(task => task.dueDate && task.dueDate > today);
+                // Include future tasks AND tasks with no due date (excluding overdue and due today which have their own sections)
+                const futureTasks = allTasks.filter(task => {
+                    // Exclude completed tasks
+                    if (task.status === 'Completed') return false;
+                    // Exclude overdue tasks (they have their own section)
+                    if (task.dueDate && task.dueDate < today) return false;
+                    // Exclude tasks due today (they have their own section)
+                    if (task.dueDate === today) return false;
+                    // Include future tasks and tasks with no due date
+                    return true;
+                });
                 
                 return futureTasks.sort((a, b) => {
+                    // Tasks with no due date go to the end
                     if (!a.dueDate && !b.dueDate) return 0;
                     if (!a.dueDate) return 1;
                     if (!b.dueDate) return -1;
@@ -2125,13 +2136,13 @@
                                         openTaskModal(project, task);
                                     }}
                                 >
-                                    ✏️
+                                    âœï¸
                                 </button>
                                 <button 
                                     className="btn btn-danger btn-small"
                                     onClick={() => deleteTask(task.projectId, task.id)}
                                 >
-                                    🗑️
+                                    ðŸ—‘ï¸
                                 </button>
                             </div>
                         </div>
@@ -2161,7 +2172,7 @@
                         </div>
                         {task.notes && (
                             <div className="task-notes">
-                                📝 {task.notes}
+                                ðŸ“ {task.notes}
                             </div>
                         )}
                     </div>
@@ -2179,13 +2190,13 @@
                         <div className="calendar-header">
                             <div className="calendar-nav">
                                 <button className="calendar-nav-btn" onClick={() => navigateCalendar(-1)}>
-                                    ◀
+                                    â—€
                                 </button>
                                 <h2 className="calendar-title">
                                     {calendarView === 'monthly' ? getMonthName(calendarDate) : getWeekRange(calendarDate)}
                                 </h2>
                                 <button className="calendar-nav-btn" onClick={() => navigateCalendar(1)}>
-                                    ▶
+                                    â–¶
                                 </button>
                                 <button className="today-btn" onClick={goToToday}>
                                     Today
@@ -2208,7 +2219,7 @@
                         </div>
                         
                         <div className="drag-hint">
-                            <span className="drag-hint-icon">💡</span>
+                            <span className="drag-hint-icon">ðŸ’¡</span>
                             <span>Drag and drop tasks to change their due date</span>
                         </div>
 
@@ -2270,7 +2281,7 @@
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
                         <div className="sidebar-header">
                             <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
-                                ✕
+                                âœ•
                             </button>
                             <h2>Projects</h2>
                         </div>
@@ -2281,7 +2292,7 @@
                                     className={`sidebar-item ${selectedProjectFilter === 'all' ? 'active' : ''}`}
                                     onClick={() => selectProjectFromSidebar('all')}
                                 >
-                                    <span>📊 All Projects</span>
+                                    <span>ðŸ“Š All Projects</span>
                                     <span className="sidebar-item-count">{projects.length}</span>
                                 </div>
                             </div>
@@ -2294,7 +2305,7 @@
                                             className={`sidebar-item ${selectedProjectFilter === project.id ? 'active' : ''}`}
                                             onClick={() => selectProjectFromSidebar(project.id)}
                                         >
-                                            <span>📁 {project.name}</span>
+                                            <span>ðŸ“ {project.name}</span>
                                             <span className="sidebar-item-count">
                                                 {project.tasks?.length || 0}
                                             </span>
@@ -2317,35 +2328,35 @@
                                 <p>Real-time sync across all devices</p>
                             </div>
                             <button className="add-task-global-btn" onClick={openGlobalTaskModal}>
-                                ➕ Add Task
+                                âž• Add Task
                             </button>
                         </div>
 
                         {/* Task Stats Bar - Always Visible */}
                         <div className="task-stats-bar">
                             <div className="stat-card due-today">
-                                <div className="stat-icon">🔥</div>
+                                <div className="stat-icon">ðŸ”¥</div>
                                 <div className="stat-content">
                                     <div className="stat-number">{getTasksDueToday().length}</div>
                                     <div className="stat-label">Due Today</div>
                                 </div>
                             </div>
                             <div className="stat-card overdue">
-                                <div className="stat-icon">⚠️</div>
+                                <div className="stat-icon">âš ï¸</div>
                                 <div className="stat-content">
                                     <div className="stat-number">{getOverdueTasks().length}</div>
                                     <div className="stat-label">Overdue</div>
                                 </div>
                             </div>
                             <div className="stat-card total">
-                                <div className="stat-icon">📋</div>
+                                <div className="stat-icon">ðŸ“‹</div>
                                 <div className="stat-content">
                                     <div className="stat-number">{getTotalTasks()}</div>
                                     <div className="stat-label">Pending Tasks</div>
                                 </div>
                             </div>
                             <div className="stat-card completed">
-                                <div className="stat-icon">✅</div>
+                                <div className="stat-icon">âœ…</div>
                                 <div className="stat-content">
                                     <div className="stat-number">{getCompletedTasks()}</div>
                                     <div className="stat-label">Completed</div>
@@ -2355,7 +2366,7 @@
 
                         {!isConfigured && (
                             <div className="firebase-setup">
-                                <h3>⚠️ Firebase Setup Required</h3>
+                                <h3>âš ï¸ Firebase Setup Required</h3>
                                 <p>
                                     <strong>To enable real-time sync:</strong><br/>
                                     1. Create a free Firebase project at <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br/>
@@ -2385,13 +2396,13 @@
                             {currentView === 'by-project' && (
                                 <>
                                     <button className="menu-btn" onClick={toggleSidebar}>
-                                        ☰ Projects Menu
+                                        â˜° Projects Menu
                                     </button>
                                     <button className="btn btn-secondary" onClick={expandAllProjects}>
-                                        ⬇ Expand All
+                                        â¬‡ Expand All
                                     </button>
                                     <button className="btn btn-secondary" onClick={collapseAllProjects}>
-                                        ⬆ Collapse All
+                                        â¬† Collapse All
                                     </button>
                                 </>
                             )}
@@ -2401,35 +2412,35 @@
                                     className={`toggle-btn ${currentView === 'all-tasks' ? 'active' : ''}`}
                                     onClick={() => setCurrentView('all-tasks')}
                                 >
-                                    📋 All Tasks
+                                    ðŸ“‹ All Tasks
                                 </button>
                                 <button 
                                     className={`toggle-btn ${currentView === 'calendar' ? 'active' : ''}`}
                                     onClick={() => setCurrentView('calendar')}
                                 >
-                                    📅 Calendar
+                                    ðŸ“… Calendar
                                 </button>
                                 <button 
                                     className={`toggle-btn ${currentView === 'by-project' ? 'active' : ''}`}
                                     onClick={() => setCurrentView('by-project')}
                                 >
-                                    📁 Projects
+                                    ðŸ“ Projects
                                 </button>
                                 <button 
                                     className={`toggle-btn ${currentView === 'notes' ? 'active' : ''}`}
                                     onClick={() => setCurrentView('notes')}
                                 >
-                                    📝 Notes
+                                    ðŸ“ Notes
                                 </button>
                             </div>
 
                             <button className="btn btn-primary" onClick={() => setShowProjectModal(true)}>
-                                ➕ New Project
+                                âž• New Project
                             </button>
 
                             {currentView === 'notes' && (
                                 <button className="btn btn-primary" onClick={() => openNoteModal()}>
-                                    ➕ New Note
+                                    âž• New Note
                                 </button>
                             )}
                         </div>
@@ -2440,7 +2451,7 @@
                         {/* Toast Notification */}
                         {toast && (
                             <div className="toast">
-                                <span>✓</span>
+                                <span>âœ“</span>
                                 <span>{toast}</span>
                             </div>
                         )}
@@ -2449,12 +2460,12 @@
                     {currentView === 'notes' && (
                         <div className="project-card">
                             <div className="project-header">
-                                <h2 className="project-title">📝 All Notes ({getAllNotesWithProject().length})</h2>
+                                <h2 className="project-title">ðŸ“ All Notes ({getAllNotesWithProject().length})</h2>
                             </div>
                             <div className="tasks-list">
                                 {getAllNotesWithProject().length === 0 ? (
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">📝</div>
+                                        <div className="empty-state-icon">ðŸ“</div>
                                         <h3>No notes yet</h3>
                                         <p>Click "New Note" to create your first note</p>
                                     </div>
@@ -2469,20 +2480,20 @@
                                                         className="btn btn-secondary btn-small"
                                                         onClick={() => openNoteModal(note)}
                                                     >
-                                                        ✏️
+                                                        âœï¸
                                                     </button>
                                                     <button 
                                                         className="btn btn-danger btn-small"
                                                         onClick={() => deleteNote(note.projectId, note.id)}
                                                     >
-                                                        🗑️
+                                                        ðŸ—‘ï¸
                                                     </button>
                                                 </div>
                                             </div>
                                             <div className="note-content">{note.content}</div>
                                             <div className="note-meta">
                                                 <div className="note-date">
-                                                    🕒 Updated: {formatDate(note.updatedAt)}
+                                                    ðŸ•’ Updated: {formatDate(note.updatedAt)}
                                                 </div>
                                             </div>
                                         </div>
@@ -2496,7 +2507,7 @@
                     {currentView === 'all-tasks' && getOverdueTasks().length > 0 && (
                         <div className="overdue-section">
                             <div className="overdue-header">
-                                <h2>⚠️ Overdue</h2>
+                                <h2>âš ï¸ Overdue</h2>
                                 <span className="overdue-badge">{getOverdueTasks().length}</span>
                             </div>
                             <div className="tasks-list">
@@ -2509,7 +2520,7 @@
                     {currentView === 'all-tasks' && getTasksDueToday().length > 0 && (
                         <div className="due-today-section">
                             <div className="due-today-header">
-                                <h2>🔥 Due Today</h2>
+                                <h2>ðŸ”¥ Due Today</h2>
                                 <span className="due-today-badge">{getTasksDueToday().length}</span>
                             </div>
                             <div className="tasks-list">
@@ -2522,12 +2533,12 @@
                     {currentView === 'all-tasks' && (
                         <div className="project-card">
                             <div className="project-header">
-                                <h2 className="project-title">📅 Upcoming Tasks ({filterTasksBySearch(getAllTasksSorted()).length})</h2>
+                                <h2 className="project-title">ðŸ“… Upcoming & Unscheduled Tasks ({filterTasksBySearch(getAllTasksSorted()).length})</h2>
                             </div>
                             <div className="tasks-list">
                                 {filterTasksBySearch(getAllTasksSorted()).length === 0 ? (
                                     <div className="empty-state">
-                                        <p>{searchQuery ? 'No tasks found matching your search.' : 'No upcoming tasks.'}</p>
+                                        <p>{searchQuery ? 'No tasks found matching your search.' : 'No upcoming or unscheduled tasks.'}</p>
                                     </div>
                                 ) : (
                                     filterTasksBySearch(getAllTasksSorted()).map(task => renderTaskItem(task))
@@ -2542,7 +2553,7 @@
                             {getFilteredProjects().length === 0 ? (
                                 <div className="project-card">
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">📁</div>
+                                        <div className="empty-state-icon">ðŸ“</div>
                                         <h3>No projects yet</h3>
                                         <p>Create your first project to get started</p>
                                     </div>
@@ -2563,7 +2574,7 @@
                                             style={{ cursor: 'pointer' }}
                                         >
                                             <div className="project-collapsed-left">
-                                                <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>▶</span>
+                                                <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>â–¶</span>
                                                 <h2 className="project-collapsed-title">{project.name}</h2>
                                             </div>
                                             <div className="project-collapsed-stats">
@@ -2589,13 +2600,13 @@
                                                         className="btn btn-primary btn-small"
                                                         onClick={() => openTaskModal(project)}
                                                     >
-                                                        ➕
+                                                        âž•
                                                     </button>
                                                     <button 
                                                         className="btn btn-danger btn-small"
                                                         onClick={() => deleteProject(project.id)}
                                                     >
-                                                        🗑️
+                                                        ðŸ—‘ï¸
                                                     </button>
                                                 </div>
                                             </div>
@@ -2612,7 +2623,7 @@
                                                             className="btn btn-info btn-small"
                                                             onClick={() => toggleProjectNotes(project.id)}
                                                         >
-                                                            📝 {showingNotesForProject === project.id ? 'Hide' : 'View'} Notes ({project.notes.length})
+                                                            ðŸ“ {showingNotesForProject === project.id ? 'Hide' : 'View'} Notes ({project.notes.length})
                                                         </button>
                                                     )}
                                                 </div>
@@ -2625,7 +2636,7 @@
                                                 {showingNotesForProject === project.id && hasNotes && (
                                                     <div className="project-notes-section">
                                                         <div className="project-notes-header">
-                                                            <h3 className="project-notes-title">📝 Project Notes</h3>
+                                                            <h3 className="project-notes-title">ðŸ“ Project Notes</h3>
                                                             <span className="notes-badge">{project.notes.length}</span>
                                                         </div>
                                                         <div className="tasks-list">
@@ -2638,20 +2649,20 @@
                                                                                 className="btn btn-secondary btn-small"
                                                                                 onClick={() => openNoteModal(note)}
                                                                             >
-                                                                                ✏️
+                                                                                âœï¸
                                                                             </button>
                                                                             <button 
                                                                                 className="btn btn-danger btn-small"
                                                                                 onClick={() => deleteNote(project.id, note.id)}
                                                                             >
-                                                                                🗑️
+                                                                                ðŸ—‘ï¸
                                                                             </button>
                                                                         </div>
                                                                     </div>
                                                                     <div className="note-content">{note.content}</div>
                                                                     <div className="note-meta">
                                                                         <div className="note-date">
-                                                                            🕒 Updated: {formatDate(note.updatedAt)}
+                                                                            ðŸ•’ Updated: {formatDate(note.updatedAt)}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -2663,7 +2674,7 @@
                                                 <div className="tasks-list">
                                                     {!project.tasks || project.tasks.length === 0 ? (
                                                         <div className="empty-state">
-                                                            <p>No tasks yet. Click "➕" to create one.</p>
+                                                            <p>No tasks yet. Click "âž•" to create one.</p>
                                                         </div>
                                                     ) : (
                                                         project.tasks.map(task => {
@@ -2688,13 +2699,13 @@
                                                                                 className="btn btn-secondary btn-small"
                                                                                 onClick={() => openTaskModal(project, task)}
                                                                             >
-                                                                                ✏️
+                                                                                âœï¸
                                                                             </button>
                                                                             <button 
                                                                                 className="btn btn-danger btn-small"
                                                                                 onClick={() => deleteTask(project.id, task.id)}
                                                                             >
-                                                                                🗑️
+                                                                                ðŸ—‘ï¸
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -2724,7 +2735,7 @@
                                                                     </div>
                                                                     {task.notes && (
                                                                         <div className="task-notes">
-                                                                            📝 {task.notes}
+                                                                            ðŸ“ {task.notes}
                                                                         </div>
                                                                     )}
                                                                 </div>
